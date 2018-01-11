@@ -154,7 +154,7 @@ fun main(args: Array<String>) {
 
 Kotlin 编译器现在可将类型转换信息用于类型推断。如果你调用一个<!--
 -->返回类型参数 `T` 的泛型方法并将返回值转换为指定类型 `Foo`，那么编译器现在知道<!--
--->对于本次调用需要约束类型为 `Foo`。
+-->对于本次调用需要绑定类型为 `Foo`。
 
 这对于 Android 开发者来说尤为重要，因为编译器现在可以正确分析
 Android API 级别 26 中的泛型 `findViewById` 调用：
@@ -165,8 +165,8 @@ val button = findViewById(R.id.button) as Button
 
 ### 智能类型转换改进
 
-When a variable is assigned from a safe call expression and checked for null, the smart cast is now applied to 
-the safe call receiver as well:
+当一个变量有安全调用表达式与空检测赋值时，其智能转换现在也可以应用于<!--
+-->安全调用接收者：
 
 <div class="sample" markdown="1" data-min-compiler-version="1.2">
 
@@ -175,11 +175,11 @@ fun countFirst(s: Any): Int {
     //sampleStart
     val firstChar = (s as? CharSequence)?.firstOrNull()
     if (firstChar != null)
-       return s.count { it == firstChar } // s: Any is smart cast to CharSequence
+       return s.count { it == firstChar } // s: Any 会智能转换为 CharSequence
     
     val firstItem = (s as? Iterable<*>)?.firstOrNull()
     if (firstItem != null)
-       return s.count { it == firstItem } // s: Any is smart cast to Iterable<*>
+       return s.count { it == firstItem } // s: Any 会智能转换为 Iterable<*>
     //sampleEnd
     
     return -1
@@ -197,7 +197,7 @@ fun main(args: Array<String>) {
 ```
 </div>
 
-Also, smart casts in a lambda are now allowed for local variables that are only modified before the lambda:
+智能转换现在也允许用于在 lambda 表达式中局部变量，只要这些局部变量仅在 lambda 表达式之前修改即可：
 
 <div class="sample" markdown="1" data-min-compiler-version="1.2">
 
@@ -211,7 +211,7 @@ fun main(args: Array<String>) {
 
     run {
         if (x != null) {
-            println(x.length) // x is smart cast to String
+            println(x.length) // x 会智能转换为 String
         }
     }
     //sampleEnd
@@ -219,57 +219,57 @@ fun main(args: Array<String>) {
 ```
 </div>
 
-### Support for  ::foo as a shorthand for this::foo
+### 支持 ::foo 作为 this::foo 的简写
 
-A bound callable reference to a member of `this` can now be written without explicit receiver, `::foo` instead 
-of `this::foo`. This also makes callable references more convenient to use in lambdas where you refer to a member 
-of the outer receiver.
+现在写绑定到 `this` 成员的可调用引用可以无需显式接收者，即 `::foo` 取代
+`this:: foo`。这也使在引用外部接收者的成员的 lambda 表达式中使用可调用引用更加方便<!--
+-->。
 
-### Breaking change: sound smart casts after try blocks
+### 阻断性改动：try 块后可靠智能转换
 
-Earlier, Kotlin used assignments made inside a `try` block for smart casts after the block, which could break type- and null-safety 
-and lead to runtime failures. This release fixes this issue, making the smart casts more strict, but breaking some code
-that relied on such smart casts.
+Kotlin 以前将 `try` 块中的赋值语句用于块后的智能转换，这可能会破坏类型安全与空安全<!--
+-->并引发运行时故障。这个版本修复了该问题，使智能转换更加严格，但可能会破坏一些<!--
+-->依靠这种智能转换的代码。
 
-To switch to the old smart casts behavior, pass the fallback flag `-Xlegacy-smart-cast-after-try` as the compiler 
-argument. It will become deprecated in Kotlin 1.3.
+如果要切换到旧版智能转换行为，请传入回退标志 `-Xlegacy-smart-cast-after-try` 作为编译器<!--
+-->参数。该参数会在 Kotlin 1.3 中弃用。
 
-### Deprecation: data classes overriding copy
+### 弃用：数据类弃用 copy
 
-When a data class derived from a type that already had the `copy` function with the same signature, the `copy` 
-implementation generated for the data class used the defaults from the supertype, leading to counter-intuitive behavior, 
-or failed at runtime if there were no default parameters in the supertype. 
+当从已具有签名相同的 `copy` 函数的类型派生数据类时，为数据类生成的 `copy`
+实现使用超类型的默认值，这导致反直觉行为，
+或者导致运行时失败，如果超类型中没有默认参数的话。
 
-Inheritance that leads to a `copy` conflict has become deprecated with a warning in Kotlin 1.2 
-and will be an error in Kotlin 1.3.
+导致 `copy` 冲突的继承在 Kotlin 1.2 中已弃用并带有警告，
+而在 Kotlin 1.3 中将会是错误。
 
-### Deprecation: nested types in enum entries
+### 弃用：枚举条目中的嵌套类型
 
-Inside enum entries, defining a nested type that is not an `inner class` has been deprecated due to issues in the 
-initialization logic. This causes a warning in Kotlin 1.2 and will become an error in Kotlin 1.3.
+由于初始化逻辑的问题，已弃用在枚举条目内部定义一个非 `inner class`
+的嵌套类。这在 Kotlin 1.2 中会引起警告，而在 Kotlin 1.3 中会成为错误。
 
-### Deprecation: single named argument for vararg
+### 弃用：vararg 单个命名参数
 
-For consistency with array literals in annotations, passing a single item for a vararg parameter in the named 
-form (`foo(items = i)`) has been deprecated. Please use the spread operator with the corresponding 
-array factory functions:
+为了与注解中的数组字面值保持一致，向一个命名参数形式的 vararg 参数传入单个项目<!--
+-->的用法（`foo(items = i)`）已被弃用。请使用伸展操作符连同相应的<!--
+-->数组工厂函数：
 
 ```kotlin
 foo(items = *intArrayOf(1))
 ```
 
-There is an optimization that removes redundant arrays creation in such cases, which prevents performance degradation. 
-The single-argument form produces warnings in Kotlin 1.2 and is to be dropped in Kotlin 1.3.
+在这种情况下有一项防止性能下降的优化可以消除冗余的数组创建。
+单参数形式在 Kotlin 1.2 中会产生警告，而在 Kotlin 1.3 中会放弃。
 
-### Deprecation: inner classes of generic classes extending Throwable
+### 弃用：扩展 Throwable 的泛型类的内部类
 
-Inner classes of generic types that inherit from `Throwable` could violate type-safety in a throw-catch scenario and 
-thus have been deprecated, with a warning in Kotlin 1.2 and an error in Kotlin 1.3.
+继承自 `Throwable` 的泛型类的内部类可能会在 throw-catch 场景中违反类型安全性，因此<!--
+-->已弃用，在 Kotlin 1.2 中会是警告，而在 Kotlin 1.3 中会是错误。
 
-### Deprecation: mutating backing field of a read-only property
+### 弃用：修改只读属性的幕后字段
 
-Mutating the backing field of a read-only property by assigning `field = ...` in the custom getter has been 
-deprecated, with a warning in Kotlin 1.2 and an error in Kotlin 1.3.
+通过在自定义 getter 中赋值 `field = ……` 来修改只读属性的幕后字段的用法已被弃用，
+在 Kotlin 1.2 中会是警告，而在 Kotlin 1.3 中会是错误。
 
 ## 标准库
 
